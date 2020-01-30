@@ -23,7 +23,7 @@ def auth_register():
 
     for required_param in required_params:
         if (required_param not in params) or (params[required_param] == ''):
-            return json.dumps({'status': 'error', 'error_message': 'One or more fields are empty'}), 400
+            return json.dumps({'status': 'error', 'error_message': 'One or more fields are empty'}), 200
 
     first_name = params['first_name']
     last_name = params['last_name']
@@ -32,16 +32,16 @@ def auth_register():
     password_repeat = params['password_repeat']
 
     if password != password_repeat:
-        return json.dumps({'status': 'error', 'error_message': 'Passwords dont match'}), 400
+        return json.dumps({'status': 'error', 'error_message': 'Passwords dont match'}), 200
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
     cursor.execute('SELECT * FROM Users WHERE email = %s', (email,))
     if cursor.fetchone() is not None:
-        return json.dumps({'status': 'error', 'error_message': 'This email already registered'}), 409
+        return json.dumps({'status': 'error', 'error_message': 'This email already registered'}), 200
 
     cursor.execute("INSERT INTO Users(first_name, last_name, email, password_hash) VALUES "
-                   "('%s', '%s', '%s', '{%s') RETURNING id",
+                   "(%string, %string, %string, %string) RETURNING id",
                    (first_name, last_name, email, password_hash,))
 
     user_id = cursor.fetchone()[0]
@@ -49,7 +49,7 @@ def auth_register():
     token = hashlib.sha256('{}+{}+{}'.format(user_id, email, password).encode('utf-8')).hexdigest()
     db_adapter.commit()
 
-    cursor.execute("INSERT INTO sessions(user_id, token) VALUES ({}, '{}')".format(user_id, token))
+    cursor.execute("INSERT INTO sessions(user_id, token) VALUES (%serial, %string)".format(user_id, token))
     db_adapter.commit()
 
     return json.dumps({'status': 'success', 'token': token}), 200
@@ -63,7 +63,7 @@ def auth_login():
     params = request.get_json()
 
     if ('email' not in params) or ('password' not in params) or (params['email'] == '') or (params['password'] == ''):
-        return json.dumps({'status': 'error', 'error_message': 'One or more fields are empty'}), 400
+        return json.dumps({'status': 'error', 'error_message': 'One or more fields are empty'}), 200
 
     email = params['email']
     password = params['password']
@@ -73,7 +73,7 @@ def auth_login():
     user = cursor.fetchone()
 
     if user is None:
-        return json.dumps({'status': 'error', 'error_message': 'Wrong email or password'}), 406
+        return json.dumps({'status': 'error', 'error_message': 'Wrong email or password'}), 200
 
     cursor.execute('SELECT token FROM sessions WHERE user_id = %s', (user.get('id'),))
 
