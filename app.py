@@ -1,12 +1,14 @@
 import json
 
 from flask import Flask, request
+from flask_cors import CORS
 
 import hashlib
 
 from db_helper import DBHelper
 
 app = Flask(__name__)
+CORS(app)
 
 db_adapter = DBHelper()
 
