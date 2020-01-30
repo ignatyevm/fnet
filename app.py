@@ -44,12 +44,12 @@ def auth_register():
                    "(%s, %s, %s, %s) RETURNING id",
                    (first_name, last_name, email, password_hash,))
 
-    user_id = cursor.fetchone()[0]
+    user_id = cursor.fetchone().get('id')
 
     token = hashlib.sha256('{}+{}+{}'.format(user_id, email, password).encode('utf-8')).hexdigest()
     db_adapter.commit()
 
-    cursor.execute("INSERT INTO sessions(user_id, token) VALUES (%d, %s)".format(user_id, token))
+    cursor.execute("INSERT INTO sessions(user_id, token) VALUES (%i, %s)".format(user_id, token))
     db_adapter.commit()
 
     return json.dumps({'status': 'success', 'token': token}), 200
