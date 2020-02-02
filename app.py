@@ -1,11 +1,14 @@
 import json
+import hashlib
 
 from flask import Flask, request
 from flask_cors import CORS
 
-import hashlib
-
 from db_helper import DBHelper
+from validator import validate, ValidationError
+from message_manager import MessageManager
+from response_manager import ResponseManager
+
 
 app = Flask(__name__)
 CORS(app)
@@ -13,32 +16,37 @@ CORS(app)
 db_adapter = DBHelper()
 
 
+@app.route('/test', methods=['GET', 'POST'])
+def test():
+    try:
+        email, password = validate(request.get_json(), ['email', 'password'])
+    except ValidationError as ve:
+        return ResponseManager.error(ve)
+    print(email)
+    print(password)
+    return 'kek', 200
+
+
 @app.route('/auth/register', methods=['POST'])
 def auth_register():
     db_adapter.connect()
     cursor = db_adapter.get_cursor()
 
-    params = request.get_json()
     required_params = ['first_name', 'last_name', 'email', 'password', 'password_repeat']
 
-    for required_param in required_params:
-        if (required_param not in params) or (params[required_param] == ''):
-            return json.dumps({'status': 'error', 'error_message': 'One or more fields are empty'}), 200
-
-    first_name = params['first_name']
-    last_name = params['last_name']
-    email = params['email']
-    password = params['password']
-    password_repeat = params['password_repeat']
+    try:
+        first_name, last_name, email, password, password_repeat = validate(request.get_json(), required_params)
+    except ValidationError as ve:
+        return ResponseManager.error(ve)
 
     if password != password_repeat:
-        return json.dumps({'status': 'error', 'error_message': 'Passwords dont match'}), 200
+        return ResponseManager.error(MessageManager().get('passwords_dont_match'))
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
     cursor.execute('SELECT * FROM Users WHERE email = %s', (email,))
     if cursor.fetchone() is not None:
-        return json.dumps({'status': 'error', 'error_message': 'This email already registered'}), 200
+        return ResponseManager.error(MessageManager().get('email_used'))
 
     cursor.execute("INSERT INTO Users(first_name, last_name, email, password_hash) VALUES "
                    "(%s, %s, %s, %s) RETURNING id",
@@ -52,7 +60,7 @@ def auth_register():
     cursor.execute("INSERT INTO sessions(user_id, token) VALUES (%s, %s)", (user_id, token,))
     db_adapter.commit()
 
-    return json.dumps({'status': 'success', 'token': token}), 200
+    return ResponseManager.success(user_id, token)
 
 
 @app.route('/auth/login', methods=['POST'])
@@ -60,26 +68,28 @@ def auth_login():
     db_adapter.connect()
     cursor = db_adapter.get_cursor()
 
-    params = request.get_json()
+    required_params = ['email', 'password']
 
-    if ('email' not in params) or ('password' not in params) or (params['email'] == '') or (params['password'] == ''):
-        return json.dumps({'status': 'error', 'error_message': 'One or more fields are empty'}), 200
+    try:
+        email, password = validate(request.get_json(), required_params)
+    except ValidationError as ve:
+        return ResponseManager.error(ve)
 
-    email = params['email']
-    password = params['password']
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
     cursor.execute('SELECT id FROM Users WHERE email = %s AND password_hash = %s', (email, password_hash,))
     user = cursor.fetchone()
 
     if user is None:
-        return json.dumps({'status': 'error', 'error_message': 'Wrong email or password'}), 200
+        return ResponseManager.error(MessageManager().get('wrong_credentials'))
 
-    cursor.execute('SELECT token FROM sessions WHERE user_id = %s', (user.get('id'),))
+    user_id = user.get('id')
+
+    cursor.execute('SELECT token FROM sessions WHERE user_id = %s', (user_id,))
 
     session = cursor.fetchone()
 
-    return json.dumps({'status': 'success', 'token': session.get('token')}), 200
+    return ResponseManager.success(user_id, session.get('token'))
 
 
 if __name__ == '__main__':
