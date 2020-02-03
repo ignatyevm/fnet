@@ -125,7 +125,7 @@ ALTER TABLE "Dialog" ADD CONSTRAINT "Dialog_fk0" FOREIGN KEY ("second_member_id"
 ALTER TABLE "Dialog" ADD CONSTRAINT "Dialog_fk1" FOREIGN KEY ("first_member_id") REFERENCES "User"("id");
 
 ALTER TABLE "Message" ADD CONSTRAINT "Message_fk0" FOREIGN KEY ("sender_id") REFERENCES "User"("id");
-ALTER TABLE "Message" ADD CONSTRAINT "Message_fk1" FOREIGN KEY ("conversation_id") REFERENCES "Dialog"("id");
+ALTER TABLE "Message" ADD CONSTRAINT "Message_fk1" FOREIGN KEY ("dialog_id") REFERENCES "Dialog"("id");
 
 ALTER TABLE "Session" ADD CONSTRAINT "Session_fk0" FOREIGN KEY ("user_id") REFERENCES "User"("id");
 
