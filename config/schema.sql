@@ -4,7 +4,7 @@ CREATE TABLE "User" (
 	"password_hash" TEXT NOT NULL,
 	"first_name" varchar(50) NOT NULL,
 	"last_name" varchar(50) NOT NULL,
-	"gender" varchar(10) NOT NULL,
+	"gender" varchar(10) NOT NULL CONSTRAINT gender_constraint CHECK (gender in ('male', 'female')),
 	"status" varchar(100),
 	"birth_date" DATE NOT NULL,
 	"register_date" DATE NOT NULL DEFAULT now(),
@@ -20,7 +20,7 @@ CREATE TABLE "User" (
 CREATE TABLE "Post" (
 	"id" serial NOT NULL,
 	"profile_id" integer NOT NULL,
-	"text" varchar(10000) NOT NULL,
+	"text" varchar(5000) NOT NULL,
 	"likes_count" integer NOT NULL DEFAULT 0,
 	"reposts_count" integer NOT NULL DEFAULT 0,
 	"views_count" integer NOT NULL DEFAULT 0,
@@ -47,7 +47,7 @@ CREATE TABLE "Message" (
 	"id" serial NOT NULL,
 	"sender_id" integer NOT NULL,
 	"dialog_id" serial NOT NULL,
-	"text" varchar(1000) NOT NULL,
+	"text" varchar(1500) NOT NULL,
 	"time" TIMESTAMP NOT NULL DEFAULT now(),
 	CONSTRAINT "Message_pk" PRIMARY KEY ("id")
 ) WITH (
