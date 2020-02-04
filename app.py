@@ -1,19 +1,25 @@
+import random
+import smtplib
+from datetime import datetime
 import json
 import hashlib
 
 from flask import Flask, request
 from flask_cors import CORS
 
+from pymemcache.client import base
+
 from db_helper import DBHelper
 from validator import validate, ValidationError
 from message_manager import MessageManager
 from response_manager import ResponseManager
-
+from config.db_config import mc_host, mc_port
 
 app = Flask(__name__)
 CORS(app)
 
-db_adapter = DBHelper()
+db_helper = DBHelper()
+memcached_client = base.Client((mc_host, mc_port))
 
 
 @app.route('/test', methods=['GET', 'POST'])
@@ -27,46 +33,74 @@ def test():
     return 'kek', 200
 
 
+@app.route('/auth/email_verify', methods=['POST'])
+def auth_email_verify():
+    email, code = validate(request.get_json(), ['email', 'code'])
+    valid_code = memcached_client.get(email)
+    if valid_code is None or int(valid_code) != int(code):
+        return ResponseManager.error(MessageManager().get('wrong_code'))
+    memcached_client.delete(email)
+
+    db_helper.connect()
+    cursor = db_helper.get_cursor()
+
+    cursor.execute('UPDATE "User" SET is_email_verified=true WHERE email = %s RETURNING id, password_hash', (email,))
+    db_helper.commit()
+
+    result = cursor.fetchone()
+    user_id = result.get('id')
+    password_hash = result.get('password_hash')
+    token = hashlib.sha256('{}+{}+{}'.format(user_id, email, password_hash).encode('utf-8')).hexdigest()
+
+    cursor.execute('INSERT INTO "Session"(user_id, token) VALUES (%s, %s)', (user_id, token,))
+    db_helper.commit()
+
+    return ResponseManager.auth_success(user_id, token)
+
+
 @app.route('/auth/register', methods=['POST'])
 def auth_register():
-    db_adapter.connect()
-    cursor = db_adapter.get_cursor()
+    db_helper.connect()
+    cursor = db_helper.get_cursor()
 
-    required_params = ['first_name', 'last_name', 'email', 'password', 'password_repeat']
+    required_params = ['first_name', 'last_name', 'birth_date', 'gender', 'email', 'password']
 
     try:
-        first_name, last_name, email, password, password_repeat = validate(request.get_json(), required_params)
+        first_name, last_name, birth_date, gender, email, password = validate(request.get_json(), required_params)
     except ValidationError as ve:
         return ResponseManager.error(ve)
 
-    if password != password_repeat:
-        return ResponseManager.error(MessageManager().get('passwords_dont_match'))
+    if memcached_client.get(email) is not None:
+        return ResponseManager.error(MessageManager().get('email_used'))
+
+    cursor.execute('SELECT * FROM "User" WHERE email = %s', (email,))
+    result = cursor.fetchone()
+    if result is not None and not result.get('is_email_verified'):
+        return ResponseManager.error(MessageManager().get('email_used'))
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
-    cursor.execute('SELECT * FROM Users WHERE email = %s', (email,))
-    if cursor.fetchone() is not None:
-        return ResponseManager.error(MessageManager().get('email_used'))
+    cursor.execute('INSERT INTO "User"(first_name, last_name, email, birth_date, gender, password_hash) VALUES '
+                   '(%s, %s, %s, %s, %s, %s) RETURNING id',
+                   (first_name, last_name, email, birth_date, gender, password_hash,))
 
-    cursor.execute("INSERT INTO Users(first_name, last_name, email, password_hash) VALUES "
-                   "(%s, %s, %s, %s) RETURNING id",
-                   (first_name, last_name, email, password_hash,))
+    db_helper.commit()
+    db_helper.close()
 
-    user_id = cursor.fetchone().get('id')
+    code = random.randrange(100000, 999999)
 
-    token = hashlib.sha256('{}+{}+{}'.format(user_id, email, password).encode('utf-8')).hexdigest()
-    db_adapter.commit()
+    # code valid only 10 min
+    memcached_client.set(email, code, int(datetime.now().timestamp()) + 10 * 60)
 
-    cursor.execute("INSERT INTO sessions(user_id, token) VALUES (%s, %s)", (user_id, token,))
-    db_adapter.commit()
+    print(code)
 
-    return ResponseManager.success(user_id, token)
+    return ResponseManager.auth_continue()
 
 
-@app.route('/auth/login', methods=['POST'])
+@app.route('/auth/login', methods=['GET'])
 def auth_login():
-    db_adapter.connect()
-    cursor = db_adapter.get_cursor()
+    db_helper.connect()
+    cursor = db_helper.get_cursor()
 
     required_params = ['email', 'password']
 
@@ -77,19 +111,19 @@ def auth_login():
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
-    cursor.execute('SELECT id FROM Users WHERE email = %s AND password_hash = %s', (email, password_hash,))
+    cursor.execute('SELECT id, is_email_verified FROM "User" WHERE email = %s AND password_hash = %s', (email, password_hash,))
     user = cursor.fetchone()
 
-    if user is None:
+    if user is None or not user.get('is_email_verified'):
         return ResponseManager.error(MessageManager().get('wrong_credentials'))
 
     user_id = user.get('id')
 
-    cursor.execute('SELECT token FROM sessions WHERE user_id = %s', (user_id,))
+    cursor.execute('SELECT token FROM "Session" WHERE user_id = %s', (user_id,))
 
     session = cursor.fetchone()
 
-    return ResponseManager.success(user_id, session.get('token'))
+    return ResponseManager.auth_success(user_id, session.get('token'))
 
 
 if __name__ == '__main__':
