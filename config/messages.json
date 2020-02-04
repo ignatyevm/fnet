@@ -3,5 +3,6 @@
   "email_used": "Email is already registered.",
   "passwords_dont_match":  "Passwords dont match.",
   "wrong_credentials": "Wrong email or password.",
-  "bad_email": "Email is not correct."
+  "bad_email": "Email is not correct.",
+  "wrong_code": "The code is wrong."
 }
