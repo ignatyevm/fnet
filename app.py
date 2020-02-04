@@ -10,10 +10,11 @@ from flask_cors import CORS
 from pymemcache.client import base
 
 from db_helper import DBHelper
-from validator import validate, ValidationError
+from validator import validate, FieldValidator, ValidationError
 from message_manager import MessageManager
 from response_manager import ResponseManager
 from config.db_config import mc_host, mc_port
+import config.config as config
 
 app = Flask(__name__)
 CORS(app)
@@ -35,7 +36,11 @@ def test():
 
 @app.route('/auth/email_verify', methods=['POST'])
 def auth_email_verify():
-    email, code = validate(request.get_json(), ['email', 'code'])
+    validators = [
+        FieldValidator('email').required().email(),
+        FieldValidator('code').required(),
+    ]
+    email, code = validate(request.get_json(), validators)
     valid_code = memcached_client.get(email)
     if valid_code is None or int(valid_code) != int(code):
         return ResponseManager.error(MessageManager().get('wrong_code'))
@@ -63,10 +68,17 @@ def auth_register():
     db_helper.connect()
     cursor = db_helper.get_cursor()
 
-    required_params = ['first_name', 'last_name', 'birth_date', 'gender', 'email', 'password']
+    validators = [
+        FieldValidator('first_name').required().max_len(config.max_name_len),
+        FieldValidator('last_name').required().max_len(config.max_name_len),
+        FieldValidator('birth_date').required(),
+        FieldValidator('gender').required().values_set(*config.allowed_genders),
+        FieldValidator('email').required().max_len(config.max_email_len).email(),
+        FieldValidator('password').required().min_len(config.min_password_len).max_len(config.max_password_len),
+    ]
 
     try:
-        first_name, last_name, birth_date, gender, email, password = validate(request.get_json(), required_params)
+        first_name, last_name, birth_date, gender, email, password = validate(request.get_json(), validators)
     except ValidationError as ve:
         return ResponseManager.error(ve)
 
@@ -102,10 +114,13 @@ def auth_login():
     db_helper.connect()
     cursor = db_helper.get_cursor()
 
-    required_params = ['email', 'password']
+    validators = [
+        FieldValidator('email').required().email(),
+        FieldValidator('password').required(),
+    ]
 
     try:
-        email, password = validate(request.get_json(), required_params)
+        email, password = validate(request.get_json(), validators)
     except ValidationError as ve:
         return ResponseManager.error(ve)
 

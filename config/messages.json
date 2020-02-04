@@ -1,5 +1,8 @@
 {
-  "empty_field": "Field '{field_name}' cannot be empty.",
+  "empty_field": "Field {field_name} cannot be empty.",
+  "field_min_len": "The minimum {field_name} length is {min_len} characters",
+  "field_max_len": "The maximum {field_name} length is {max_len} characters",
+  "unknown_field_value": "Unknown value {field_value} for field {field_name}",
   "email_used": "Email is already registered.",
   "passwords_dont_match":  "Passwords dont match.",
   "wrong_credentials": "Wrong email or password.",
