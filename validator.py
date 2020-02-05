@@ -58,7 +58,7 @@ class FieldValidator:
             raise ValidationError(MessageManager().get('field_max_len').format(
                 field_name=self.field_name(), max_len=self.__max_len))
 
-        if self.__email and not re.match("^[a-z][a-z0-9\-\.]+@[a-z0-9\-\.]+\.[a-z]+", field_value, re.IGNORECASE):
+        if self.__email and not re.match("[a-z0-9\-\.]+@[a-z0-9\-\.]+\.[a-z]+", field_value, re.IGNORECASE):
             raise ValidationError(MessageManager().get('bad_email'))
 
         if self.__values is not None and field_value not in self.__values:
