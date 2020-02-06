@@ -9,6 +9,7 @@ from api.auth import auth
 from api.users import users
 from api.friends import friends
 from api.messages import messages
+from api.posts import posts
 
 app = Flask(__name__)
 CORS(app)
@@ -17,7 +18,7 @@ app.register_blueprint(auth, url_prefix='/api/auth')
 app.register_blueprint(friends, url_prefix='/api/friends')
 app.register_blueprint(messages, url_prefix='/api/messages')
 app.register_blueprint(users, url_prefix='/api/users')
-
+app.register_blueprint(posts, url_prefix='/api/posts')
 
 @app.errorhandler(ValidationError)
 def validation_error(error):
