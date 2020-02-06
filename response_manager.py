@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from message_manager import MessageManager
@@ -11,7 +12,10 @@ class ResponseManager:
         if params is not None:
             for key, value in params.items():
                 result[key] = value
-        return json.dumps(result), 200
+        def converter(k):
+            if isinstance(k, (datetime.date, datetime.datetime, datetime.time)):
+                return k.__str__()
+        return json.dumps(result, default=converter), 200
 
     @staticmethod
     def auth_success(user_id, token):

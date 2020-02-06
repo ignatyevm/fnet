@@ -58,10 +58,11 @@ CREATE TABLE "Session" (
 
 CREATE TABLE "FriendRequest" (
 	"id" serial NOT NULL,
-	"sender_id" integer NOT NULL UNIQUE,
-	"receiver_id" integer NOT NULL UNIQUE,
+	"sender_id" integer NOT NULL,
+	"receiver_id" integer NOT NULL,
 	"time" TIMESTAMP NOT NULL DEFAULT now(),
 	"is_accepted" BOOLEAN NOT NULL DEFAULT false,
+	UNIQUE (sender_id, receiver_id),
 	CONSTRAINT "FriendRequest_pk" PRIMARY KEY ("id")
 ) WITH (
   OIDS=FALSE
