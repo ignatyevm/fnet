@@ -49,6 +49,7 @@ CREATE TABLE "Message" (
 	"dialog_id" serial NOT NULL,
 	"text" varchar(1500) NOT NULL,
 	"time" TIMESTAMP NOT NULL DEFAULT now(),
+	"has_read" BOOLEAN NOT NULL DEFAULT false,
 	CONSTRAINT "Message_pk" PRIMARY KEY ("id")
 ) WITH (
   OIDS=FALSE
