@@ -17,17 +17,12 @@ friends = Blueprint('friends', __name__)
 @friends.route('/<int:user_id>', methods=['GET'])
 def get_friends(user_id):
     database_cursor.execute(
-        'SELECT sender_id, receiver_id FROM "FriendRequest" WHERE (sender_id = %s OR receiver_id = %s) AND is_accepted = true',
-        (user_id, user_id,))
+        'SELECT * FROM (SELECT "User".id as friend_id, first_name, last_name FROM "FriendRequest" '
+        'JOIN "User" ON  ("User".id = "FriendRequest".receiver_id OR "User".id = "FriendRequest".sender_id) '
+        'WHERE (sender_id = %s OR receiver_id = %s) AND is_accepted = true) AS Friends WHERE friend_id != %s;',
+        (user_id, user_id, user_id,))
     result = database_cursor.fetchall()
-    friends_ids = []
-    for pair in result:
-        sender_id, receiver_id = pair.values()
-        if sender_id == user_id:
-            friends_ids.append(receiver_id)
-        else:
-            friends_ids.append(sender_id)
-    return ResponseManager.success({'friends': friends_ids})
+    return ResponseManager.success({'friends': result})
 
 
 @friends.route('/<int:friend_id>', methods=['DELETE'])
