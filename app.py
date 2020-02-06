@@ -2,32 +2,28 @@ from flask import Flask, request
 from flask_cors import CORS
 
 from database import Database
-from validator import validate, FieldValidator, ValidationError
+from validator import validate, FieldValidator, ValidationError, AuthorizationError
 from response_manager import ResponseManager
 
 from api.auth import auth
+from api.friends import friends
+from api.messages import messages
 
 app = Flask(__name__)
 CORS(app)
 
 app.register_blueprint(auth, url_prefix='/api/auth')
+app.register_blueprint(friends, url_prefix='/api/friends')
+app.register_blueprint(messages, url_prefix='/api/messages')
+
+@app.errorhandler(ValidationError)
+def validation_error(error):
+    return ResponseManager.validation_error(error)
 
 
-@app.route('/test', methods=['GET', 'POST'])
-def test():
-    validators = [
-        FieldValidator('email').required().email(),
-        FieldValidator('password').required().min_len(6),
-        FieldValidator('status').min_len(100)
-    ]
-    try:
-        email, password, status = validate(request.get_json(), validators)
-    except ValidationError as ve:
-        return ResponseManager.error(ve)
-    print(email)
-    print(password)
-    print(status)
-    return 'kek', 200
+@app.errorhandler(AuthorizationError)
+def validation_error(error):
+    return ResponseManager.auth_error()
 
 
 if __name__ == '__main__':

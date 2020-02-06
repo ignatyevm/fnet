@@ -1,7 +1,7 @@
 """
     <Profile Fields>
 """
-max_name_len = 50  # first_nae, last_name
+max_name_len = 50  # first_name, last_name
 max_email_len = 255
 min_password_len = 6
 max_password_len = 255

@@ -31,22 +31,10 @@ CREATE TABLE "Post" (
 );
 
 
-
-CREATE TABLE "Dialog" (
-	"id" serial NOT NULL,
-	"second_member_id" integer NOT NULL,
-	"first_member_id" integer NOT NULL,
-	CONSTRAINT "Dialog_pk" PRIMARY KEY ("id")
-) WITH (
-  OIDS=FALSE
-);
-
-
-
 CREATE TABLE "Message" (
 	"id" serial NOT NULL,
 	"sender_id" integer NOT NULL,
-	"dialog_id" serial NOT NULL,
+	"receiver_id" integer NOT NULL,
 	"text" varchar(1500) NOT NULL,
 	"time" TIMESTAMP NOT NULL DEFAULT now(),
 	"has_read" BOOLEAN NOT NULL DEFAULT false,
@@ -117,16 +105,10 @@ CREATE TABLE "Likes" (
   OIDS=FALSE
 );
 
-
-
-
 ALTER TABLE "Post" ADD CONSTRAINT "Post_fk0" FOREIGN KEY ("profile_id") REFERENCES "User"("id");
 
-ALTER TABLE "Dialog" ADD CONSTRAINT "Dialog_fk0" FOREIGN KEY ("second_member_id") REFERENCES "User"("id");
-ALTER TABLE "Dialog" ADD CONSTRAINT "Dialog_fk1" FOREIGN KEY ("first_member_id") REFERENCES "User"("id");
-
 ALTER TABLE "Message" ADD CONSTRAINT "Message_fk0" FOREIGN KEY ("sender_id") REFERENCES "User"("id");
-ALTER TABLE "Message" ADD CONSTRAINT "Message_fk1" FOREIGN KEY ("dialog_id") REFERENCES "Dialog"("id");
+ALTER TABLE "Message" ADD CONSTRAINT "Message_fk1" FOREIGN KEY ("receiver_id") REFERENCES "User"("id");
 
 ALTER TABLE "Session" ADD CONSTRAINT "Session_fk0" FOREIGN KEY ("user_id") REFERENCES "User"("id");
 

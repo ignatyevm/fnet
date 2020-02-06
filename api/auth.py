@@ -23,10 +23,15 @@ def auth_email_verify():
         FieldValidator('email').required().email(),
         FieldValidator('code').required(),
     ]
-    email, code = validate(request.get_json(), validators)
+
+    try:
+        email, code = validate(request.get_json(), validators)
+    except ValidationError as ve:
+        return ResponseManager.validation_error(ve)
+
     valid_code = memcached_client.get(email)
     if valid_code is None or int(valid_code) != int(code):
-        return ResponseManager.error(MessageManager().get('wrong_code'))
+        return ResponseManager.validation_error(MessageManager().get('wrong_code'))
     memcached_client.delete(email)
 
     database_cursor.execute('UPDATE "User" SET is_email_verified=true WHERE email = %s RETURNING id, password_hash',
@@ -53,18 +58,15 @@ def auth_register():
         FieldValidator('password').required().min_len(config.min_password_len).max_len(config.max_password_len)
     ]
 
-    try:
-        first_name, last_name, birth_date, gender, email, password = validate(request.get_json(), validators)
-    except ValidationError as ve:
-        return ResponseManager.error(ve)
+    first_name, last_name, birth_date, gender, email, password = validate(request.get_json(), validators)
 
     if memcached_client.get(email) is not None:
-        return ResponseManager.error(MessageManager().get('email_used'))
+        return ResponseManager.validation_error(MessageManager().get('email_used'))
 
     database_cursor.execute('SELECT * FROM "User" WHERE email = %s', (email,))
     result = database_cursor.fetchone()
     if result is not None and not result.get('is_email_verified'):
-        return ResponseManager.error(MessageManager().get('email_used'))
+        return ResponseManager.validation_error(MessageManager().get('email_used'))
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
@@ -93,7 +95,7 @@ def auth_login():
     try:
         email, password = validate(request.get_json(), validators)
     except ValidationError as ve:
-        return ResponseManager.error(ve)
+        return ResponseManager.validation_error(ve)
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
@@ -102,7 +104,7 @@ def auth_login():
     user = database_cursor.fetchone()
 
     if user is None or not user.get('is_email_verified'):
-        return ResponseManager.error(MessageManager().get('wrong_credentials'))
+        return ResponseManager.validation_error(MessageManager().get('wrong_credentials'))
 
     user_id = user.get('id')
 

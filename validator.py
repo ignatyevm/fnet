@@ -3,6 +3,7 @@ import re
 from typing import List, Dict
 
 from message_manager import MessageManager
+from database import database_cursor
 
 
 class ValidationError(Exception):
@@ -10,7 +11,21 @@ class ValidationError(Exception):
         super(ValidationError, self).__init__(message)
 
 
+class AuthorizationError(Exception):
+    def __init__(self):
+        super(AuthorizationError, self).__init__(MessageManager().get("bad_token"))
+
+
+def validate_token(token):
+    database_cursor.execute('SELECT user_id FROM "Session" WHERE token = %s', (token,))
+    result = database_cursor.fetchone()
+    if result is None:
+        raise AuthorizationError()
+    return result.get('user_id')
+
+
 class FieldValidator:
+
     __field_name = None
     __min_len = 1
     __max_len = 1000000
@@ -86,4 +101,6 @@ def validate(params: Dict[str, str], validators: List[FieldValidator]):
             field_value = params[field_name]
         validator.validate(field_value)
         for_tuple[field_name] = field_value
+    if len(for_tuple) == 1:
+        return list(for_tuple.values())[0]
     return tuple(for_tuple.values())
