@@ -2,7 +2,7 @@ from flask import Flask, request
 from flask_cors import CORS
 
 from validator import ValidationError, AuthorizationError
-from response_manager import ResponseManager
+from response_manager import ResponseManager, APIResponse
 
 from api.auth import auth
 from api.users import users
@@ -13,6 +13,7 @@ from api.likes import likes
 from api.comments import comments
 
 app = Flask(__name__)
+app.response_class = APIResponse
 CORS(app)
 
 app.register_blueprint(auth, url_prefix='/api/auth')

@@ -1,34 +1,45 @@
 import datetime
 import json
 
+from flask import Response
+
 from message_manager import MessageManager
+
+
+class APIResponse(Response):
+
+    default_mimetype = 'application/json'
+
+    @classmethod
+    def force_type(cls, rv, environ=None):
+        def converter(k):
+            if isinstance(k, (datetime.date, datetime.datetime, datetime.time)):
+                return k.__str__()
+        if isinstance(rv, dict):
+            rv = json.dumps(rv, default=converter)
+        return super(APIResponse, cls).force_type(rv, environ)
 
 
 class ResponseManager:
 
     @staticmethod
     def success(params=None):
-        result = {'status': 'success'}
-        if params is not None:
-            for key, value in params.items():
-                result[key] = value
-        def converter(k):
-            if isinstance(k, (datetime.date, datetime.datetime, datetime.time)):
-                return k.__str__()
-        return json.dumps(result, default=converter), 200
+        if params is None:
+            params = {}
+        return {**{'status': 'success'}, **params}
 
     @staticmethod
     def auth_success(user_id, token):
-        return json.dumps({'status': 'auth_success', 'user_id': user_id, 'token': token}), 200
+        return {'status': 'auth_success', 'user_id': user_id, 'token': token}
 
     @staticmethod
     def auth_continue():
-        return json.dumps({'status': 'auth_continue'}), 200
+        return {'status': 'auth_continue'}
 
     @staticmethod
     def auth_error():
-        return json.dumps({'status': 'auth_error', 'error_message': MessageManager().get("bad_token")}), 200
+        return {'status': 'auth_error', 'error_message': MessageManager().get("bad_token")}
 
     @staticmethod
     def validation_error(error):
-        return json.dumps({'status': 'validation_error', 'error_message': str(error)}), 200
+        return {'status': 'validation_error', 'error_message': str(error)}
