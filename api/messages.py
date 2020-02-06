@@ -42,7 +42,7 @@ def get_messages(second_member_id):
     result = []
     for message_data in messages_data:
         sender_id, text, time = tuple(message_data.values())
-        result.append({'sender_id': sender_id, 'text': text, 'time': time.strftime('%Y-%m-%d %H-%M')})
+        result.append({'sender_id': sender_id, 'text': text, 'time': time})
     return ResponseManager.success({'messages': result})
 
 
