@@ -16,7 +16,7 @@ posts = Blueprint('posts', __name__)
 
 @posts.route('/<int:user_id>', methods=['GET'])
 def get_posts(user_id):
-    database_cursor.execute('SELECT text, time, likes_count, views_count FROM "Post" WHERE owner_id = %s', (user_id,))
+    database_cursor.execute('SELECT id, text, time, likes_count, views_count FROM "Post" WHERE owner_id = %s', (user_id,))
     posts_data = database_cursor.fetchall()
     return ResponseManager.success({'posts': posts_data})
 
