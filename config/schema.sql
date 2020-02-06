@@ -19,7 +19,7 @@ CREATE TABLE "User" (
 
 CREATE TABLE "Post" (
 	"id" serial NOT NULL,
-	"profile_id" integer NOT NULL,
+	"owner_id" integer NOT NULL,
 	"text" varchar(5000) NOT NULL,
 	"likes_count" integer NOT NULL DEFAULT 0,
 	"reposts_count" integer NOT NULL DEFAULT 0,
@@ -106,7 +106,7 @@ CREATE TABLE "Likes" (
   OIDS=FALSE
 );
 
-ALTER TABLE "Post" ADD CONSTRAINT "Post_fk0" FOREIGN KEY ("profile_id") REFERENCES "User"("id");
+ALTER TABLE "Post" ADD CONSTRAINT "Post_fk0" FOREIGN KEY (owner_id) REFERENCES "User"("id");
 
 ALTER TABLE "Message" ADD CONSTRAINT "Message_fk0" FOREIGN KEY ("sender_id") REFERENCES "User"("id");
 ALTER TABLE "Message" ADD CONSTRAINT "Message_fk1" FOREIGN KEY ("receiver_id") REFERENCES "User"("id");
