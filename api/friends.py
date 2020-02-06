@@ -27,7 +27,7 @@ def get_friends(user_id):
 
 @friends.route('/requests', methods=['GET'])
 def get_friend_requests():
-    token = validate(request.get_json(), [FieldValidator('token').required()])
+    token = validate(request.args, [FieldValidator('token').required()])
     user_id = validate_token(token)
     database_cursor.execute(
         'SELECT sender_id, first_name, last_name FROM "FriendRequest" '
