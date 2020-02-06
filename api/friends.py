@@ -25,6 +25,17 @@ def get_friends(user_id):
     return ResponseManager.success({'friends': result})
 
 
+@friends.route('/requests', methods=['GET'])
+def get_friend_requests(user_id):
+    database_cursor.execute(
+        'SELECT * FROM (SELECT "User".id as friend_id, first_name, last_name FROM "FriendRequest" '
+        'JOIN "User" ON  ("User".id = "FriendRequest".receiver_id OR "User".id = "FriendRequest".sender_id) '
+        'WHERE (sender_id = %s OR receiver_id = %s) AND is_accepted = false) AS Friends WHERE friend_id != %s;',
+        (user_id, user_id, user_id,))
+    result = database_cursor.fetchall()
+    return ResponseManager.success({'friends': result})
+
+
 @friends.route('/<int:friend_id>', methods=['DELETE'])
 def delete_friend(friend_id):
     token = validate(request.get_json(), [FieldValidator('token').required()])
