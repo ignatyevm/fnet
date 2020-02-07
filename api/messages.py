@@ -28,10 +28,10 @@ def send_message():
     return ResponseManager.success()
 
 
-@messages.route('/dialogs/<int:user_id>')
-def get_dialogs(user_id):
+@messages.route('/dialogs', methods=['GET'])
+def get_dialogs():
     validators = [
-        FieldValidator('token').required(),
+        FieldValidator('token').required()
     ]
     token = validate(request.args, validators)
     user_id = validate_token(token)
@@ -39,12 +39,12 @@ def get_dialogs(user_id):
     messages_data = database_cursor.fetchall()
     dialogs = {}
     for message in messages_data:
-        receiver_id = message.get('receiver_id')
-        sender_id = message.get('sender_id')
-        if user_id == sender_id:
-            sender_id, receiver_id_id, text, time = message
-            if receiver_id not in dialogs.keys():
-                dialogs[receiver_id] = {'text': message}
+        sender_id, receiver_id, text, time = message.values()
+        if user_id == sender_id and receiver_id not in dialogs.keys():
+            dialogs[receiver_id] = {'text': text, 'time': time, 'sender_id': sender_id}
+        if user_id == receiver_id and sender_id not in dialogs.keys():
+            dialogs[sender_id] = {'text': text, 'time': time, 'sender_id': sender_id}
+    return ResponseManager.success({'dialogs': dialogs})
 
 
 @messages.route('/<int:second_member_id>', methods=['GET'])
@@ -63,6 +63,4 @@ def get_messages(second_member_id):
         sender_id, text, time = tuple(message_data.values())
         result.append({'sender_id': sender_id, 'text': text, 'time': time})
     return ResponseManager.success({'messages': result})
-
-
 
