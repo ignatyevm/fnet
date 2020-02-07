@@ -36,8 +36,8 @@ def update_status():
 @users.route('/update_password', methods=['PUT'])
 def update_password():
     validators = [
-        FieldValidator('old_password').required().max_len(config.max_password_len).max_len(config.min_password_len),
-        FieldValidator('new_password').required().max_len(config.max_password_len).max_len(config.min_password_len),
+        FieldValidator('old_password').required(),
+        FieldValidator('new_password').required().min_len(config.min_password_len),
         FieldValidator('token').required()
     ]
     old_password, new_password, token = validate(request.get_json(), validators)
