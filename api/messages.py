@@ -28,6 +28,25 @@ def send_message():
     return ResponseManager.success()
 
 
+@messages.route('/dialogs/<int:user_id>')
+def get_dialogs(user_id):
+    validators = [
+        FieldValidator('token').required(),
+    ]
+    token = validate(request.args, validators)
+    user_id = validate_token(token)
+    database_cursor.execute('SELECT sender_id, receiver_id, text, time FROM "Message" WHERE (sender_id = %s OR receiver_id = %s) ORDER BY time DESC', (user_id, user_id,))
+    messages_data = database_cursor.fetchall()
+    dialogs = {}
+    for message in messages_data:
+        receiver_id = message.get('receiver_id')
+        sender_id = message.get('sender_id')
+        if user_id == sender_id:
+            sender_id, receiver_id_id, text, time = message
+            if receiver_id not in dialogs.keys():
+                dialogs[receiver_id] = {'text': message}
+
+
 @messages.route('/<int:second_member_id>', methods=['GET'])
 def get_messages(second_member_id):
     validators = [
