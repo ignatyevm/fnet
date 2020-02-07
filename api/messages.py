@@ -35,15 +35,23 @@ def get_dialogs():
     ]
     token = validate(request.args, validators)
     user_id = validate_token(token)
-    database_cursor.execute('SELECT sender_id, receiver_id, text, time FROM "Message" WHERE (sender_id = %s OR receiver_id = %s) ORDER BY time DESC', (user_id, user_id,))
+    database_cursor.execute('SELECT sender_id, receiver_id, text, time FROM "Message" '
+                            'WHERE (sender_id = %s OR receiver_id = %s) ORDER BY time DESC', (user_id, user_id,))
     messages_data = database_cursor.fetchall()
     dialogs = {}
     for message in messages_data:
         sender_id, receiver_id, text, time = message.values()
+        dialog_data = {'companion_name': '{} {}', 'text': text, 'time': time, 'sender_id': sender_id}
         if user_id == sender_id and receiver_id not in dialogs.keys():
-            dialogs[receiver_id] = {'text': text, 'time': time, 'sender_id': sender_id}
+            database_cursor.execute('SELECT first_name, last_name FROM "User" WHERE id = %s', (receiver_id,))
+            companion_data = database_cursor.fetchone()
+            dialog_data['companion_name'] = dialog_data['companion_name'].format(companion_data.get('first_name'), companion_data.get('last_name'))
+            dialogs[receiver_id] = dialog_data
         if user_id == receiver_id and sender_id not in dialogs.keys():
-            dialogs[sender_id] = {'text': text, 'time': time, 'sender_id': sender_id}
+            database_cursor.execute('SELECT first_name, last_name FROM "User" WHERE id = %s', (sender_id,))
+            companion_data = database_cursor.fetchone()
+            dialog_data['companion_name'] = dialog_data['companion_name'].format(companion_data.get('first_name'), companion_data.get('last_name'))
+            dialogs[sender_id] = dialog_data
     return ResponseManager.success({'dialogs': dialogs})
 
 
