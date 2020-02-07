@@ -37,13 +37,13 @@ def get_dialogs():
     user_id = validate_token(token)
     database_cursor.execute('SELECT sender_id, receiver_id, text, time FROM "Message" WHERE (sender_id = %s OR receiver_id = %s) ORDER BY time DESC', (user_id, user_id,))
     messages_data = database_cursor.fetchall()
-    dialogs = []
+    dialogs = {}
     for message in messages_data:
         sender_id, receiver_id, text, time = message.values()
         if user_id == sender_id and receiver_id not in dialogs.keys():
-            dialogs.append({receiver_id: {'text': text, 'time': time, 'sender_id': sender_id}})
+            dialogs[receiver_id] = {'text': text, 'time': time, 'sender_id': sender_id}
         if user_id == receiver_id and sender_id not in dialogs.keys():
-            dialogs.append({sender_id: {'text': text, 'time': time, 'sender_id': sender_id}})
+            dialogs[sender_id] = {'text': text, 'time': time, 'sender_id': sender_id}
     return ResponseManager.success({'dialogs': dialogs})
 
 
