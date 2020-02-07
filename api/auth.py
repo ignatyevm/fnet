@@ -1,6 +1,7 @@
 import random
 from datetime import datetime
 import hashlib
+from smtplib import SMTP
 
 from flask import request, Blueprint
 from pymemcache.client import base
@@ -80,7 +81,21 @@ def auth_register():
     # code valid only 10 min
     memcached_client.set(email, code, int(datetime.now().timestamp()) + 10 * 60)
 
-    print(code)
+    smtp = SMTP()
+    smtp.connect('smtp.mail.ru', 26)
+    smtp.login('pasha.pavlovich.pavlov@mail.ru', 'q12344321q')
+
+    from_addr = "Fnet Verification Server <pasha.pavlovich.pavlov@mail.ru>"
+    to_addr = email
+
+    subj = 'Email Verification Code'
+    message_text = 'Your code is ' % code
+    date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+
+    message = 'From: %s\nTo: %s\nSubject: %s\nDate: %s\n\n%s' % (from_addr, to_addr, subj, date, message_text)
+
+    smtp.sendmail(from_addr, to_addr, message)
+    smtp.quit()
 
     return ResponseManager.auth_continue()
 
