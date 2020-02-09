@@ -3,13 +3,12 @@ from datetime import datetime
 import hashlib
 
 from flask import request, Blueprint
-from pymemcache.client import base
 
-from validator import validate, validate_token, FieldValidator, ValidationError
-from message_manager import MessageManager
+from validator import validate, validate_token, FieldValidator
 from response_manager import ResponseManager
 import config.config as config
 from database import database_cursor
+from errors import AuthenticationError
 
 users = Blueprint('users', __name__)
 
@@ -46,7 +45,7 @@ def update_password():
     password_hash = database_cursor.fetchone().get('password_hash')
     old_password_hash = hashlib.sha256(old_password.encode('utf-8')).hexdigest()
     if password_hash != old_password_hash:
-        return ResponseManager.auth_error()
+        raise AuthenticationError()
     new_password_hash = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
     database_cursor.execute('UPDATE "User" SET password_hash = %s WHERE id = %s RETURNING email', (new_password_hash, user_id,))
     new_token = hashlib.sha256('{}+{}+{}'.format(user_id, database_cursor.fetchone().get('email'), new_password_hash).encode('utf-8')).hexdigest()

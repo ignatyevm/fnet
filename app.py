@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 
-from errors import ValidationError, AuthorizationError, VerificationError
+from errors import ValidationError, AuthenticationError, AuthorizationError, VerificationError
 from response_manager import ResponseManager, APIResponse
 
 from api.auth import auth
@@ -30,9 +30,14 @@ def validation_error(error):
     return ResponseManager.validation_error(error)
 
 
+@app.errorhandler(AuthenticationError)
+def validation_error(error):
+    return ResponseManager.authentication_error()
+
+
 @app.errorhandler(AuthorizationError)
 def validation_error(error):
-    return ResponseManager.auth_error()
+    return ResponseManager.authorization_error()
 
 
 @app.errorhandler(VerificationError)

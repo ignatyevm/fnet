@@ -1,17 +1,17 @@
 import random
 from datetime import datetime
 import hashlib
-from smtplib import SMTP
 
 from flask import request, Blueprint
 from pymemcache.client import base
 
-from validator import validate, FieldValidator, ValidationError
+from validator import validate, FieldValidator
 from message_manager import MessageManager
 from response_manager import ResponseManager
 from config.db_config import mc_host, mc_port
 import config.config as config
 from database import database_cursor
+import errors
 
 memcached_client = base.Client((mc_host, mc_port))
 
@@ -29,7 +29,7 @@ def auth_email_verify():
 
     valid_code = memcached_client.get(email)
     if valid_code is None or int(valid_code) != int(code):
-        return ResponseManager.verification_error()
+        raise errors.VerificationError()
     memcached_client.delete(email)
 
     database_cursor.execute('UPDATE "User" SET is_email_verified=true WHERE email = %s RETURNING id, password_hash',
@@ -42,7 +42,7 @@ def auth_email_verify():
 
     database_cursor.execute('INSERT INTO "Session"(user_id, token) VALUES (%s, %s)', (user_id, token,))
 
-    return ResponseManager.auth_success(user_id, token)
+    return ResponseManager.register_success(user_id, token)
 
 
 @auth.route('/register', methods=['POST'])
@@ -59,12 +59,12 @@ def auth_register():
     first_name, last_name, birth_date, gender, email, password = validate(request.get_json(), validators)
 
     if memcached_client.get(email) is not None:
-        return ResponseManager.validation_error(MessageManager().email_used())
+        raise errors.RegistrationError()
 
     database_cursor.execute('SELECT * FROM "User" WHERE email = %s', (email,))
     result = database_cursor.fetchone()
     if result is not None and not result.get('is_email_verified'):
-        return ResponseManager.validation_error(MessageManager().email_used())
+        raise errors.RegistrationError()
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
@@ -80,7 +80,7 @@ def auth_register():
 
     print(code)
 
-    return ResponseManager.auth_continue()
+    return ResponseManager.register_continue()
 
 
 @auth.route('/login', methods=['POST'])
@@ -99,7 +99,7 @@ def auth_login():
     user = database_cursor.fetchone()
 
     if user is None or not user.get('is_email_verified'):
-        return ResponseManager.validation_error(MessageManager.wrong_credentials())
+        raise errors.AuthenticationError()
 
     user_id = user.get('id')
 
@@ -107,4 +107,4 @@ def auth_login():
 
     session = database_cursor.fetchone()
 
-    return ResponseManager.auth_success(user_id, session.get('token'))
+    return ResponseManager.authentication_success(user_id, session.get('token'))
