@@ -37,8 +37,12 @@ class ResponseManager:
         return {'status': 'auth_continue'}
 
     @staticmethod
+    def verification_error():
+        return {'status': 'verification_error', 'error_message': MessageManager.wrong_code()}
+
+    @staticmethod
     def auth_error():
-        return {'status': 'auth_error', 'error_message': MessageManager().get("bad_token")}
+        return {'status': 'auth_error', 'error_message': MessageManager.bad_token()}
 
     @staticmethod
     def validation_error(error):

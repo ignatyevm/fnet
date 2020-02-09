@@ -1,11 +1,7 @@
-import datetime
-from smtplib import SMTP
-
-from flask import Flask, request
+from flask import Flask
 from flask_cors import CORS
-from flask_mail import Mail, Message
 
-from validator import ValidationError, AuthorizationError
+from errors import ValidationError, AuthorizationError, VerificationError
 from response_manager import ResponseManager, APIResponse
 
 from api.auth import auth
@@ -37,6 +33,11 @@ def validation_error(error):
 @app.errorhandler(AuthorizationError)
 def validation_error(error):
     return ResponseManager.auth_error()
+
+
+@app.errorhandler(VerificationError)
+def validation_error(error):
+    return ResponseManager.verification_error()
 
 
 if __name__ == '__main__':

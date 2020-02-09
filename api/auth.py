@@ -25,14 +25,11 @@ def auth_email_verify():
         FieldValidator('code').required(),
     ]
 
-    try:
-        email, code = validate(request.get_json(), validators)
-    except ValidationError as ve:
-        return ResponseManager.validation_error(ve)
+    email, code = validate(request.get_json(), validators)
 
     valid_code = memcached_client.get(email)
     if valid_code is None or int(valid_code) != int(code):
-        return ResponseManager.validation_error(MessageManager().get('wrong_code'))
+        return ResponseManager.verification_error()
     memcached_client.delete(email)
 
     database_cursor.execute('UPDATE "User" SET is_email_verified=true WHERE email = %s RETURNING id, password_hash',
@@ -62,12 +59,12 @@ def auth_register():
     first_name, last_name, birth_date, gender, email, password = validate(request.get_json(), validators)
 
     if memcached_client.get(email) is not None:
-        return ResponseManager.validation_error(MessageManager().get('email_used'))
+        return ResponseManager.validation_error(MessageManager().email_used())
 
     database_cursor.execute('SELECT * FROM "User" WHERE email = %s', (email,))
     result = database_cursor.fetchone()
     if result is not None and not result.get('is_email_verified'):
-        return ResponseManager.validation_error(MessageManager().get('email_used'))
+        return ResponseManager.validation_error(MessageManager().email_used())
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
@@ -93,10 +90,7 @@ def auth_login():
         FieldValidator('password').required(),
     ]
 
-    try:
-        email, password = validate(request.get_json(), validators)
-    except ValidationError as ve:
-        return ResponseManager.validation_error(ve)
+    email, password = validate(request.get_json(), validators)
 
     password_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
@@ -105,7 +99,7 @@ def auth_login():
     user = database_cursor.fetchone()
 
     if user is None or not user.get('is_email_verified'):
-        return ResponseManager.validation_error(MessageManager().get('wrong_credentials'))
+        return ResponseManager.validation_error(MessageManager.wrong_credentials())
 
     user_id = user.get('id')
 

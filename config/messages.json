@@ -4,9 +4,9 @@
   "field_max_len": "Maximum {field_name} length is {max_len} characters",
   "unknown_field_value": "Unknown value {field_value} for field {field_name}",
   "email_used": "Email is already registered.",
-  "passwords_dont_match":  "Passwords dont match.",
   "wrong_credentials": "Wrong email or password.",
   "bad_email": "Email is not correct.",
   "wrong_code": "The code is wrong.",
-  "bad_token": "Authorization error: invalid token."
+  "bad_token": "Authorization error: invalid token.",
+  "wrong_field_type": "Wrong type for {field_name}"
 }

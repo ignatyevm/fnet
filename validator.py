@@ -4,16 +4,7 @@ from typing import List, Dict
 
 from message_manager import MessageManager
 from database import database_cursor
-
-
-class ValidationError(Exception):
-    def __init__(self, message):
-        super(ValidationError, self).__init__(message)
-
-
-class AuthorizationError(Exception):
-    def __init__(self):
-        super(AuthorizationError, self).__init__(MessageManager().get("bad_token"))
+from errors import ValidationError, AuthorizationError
 
 
 def validate_token(token):
@@ -32,6 +23,7 @@ class FieldValidator:
     __required = False
     __email = False
     __values = None
+    __type = str
 
     def __init__(self, __field_name: str):
         self.__field_name = __field_name.strip()
@@ -58,34 +50,44 @@ class FieldValidator:
         self.__email = True
         return self
 
-    def values(self, *values):
-        self.__values = list(values)
+    def values(self, *__values):
+        self.__values = list(__values)
+        return self
+
+    def string(self):
+        self.__type = str
+        return self
+
+    def integer(self):
+        self.__type = int
+        return self
+
+    def boolean(self):
+        self.__type = bool
         return self
 
     def validate(self, field_value):
 
+        if not isinstance(field_value, self.__type):
+            raise ValidationError(MessageManager.wrong_field_type(self.field_name()))
+
         if self.is_required() and (field_value is None or len(field_value) == 0):
-            raise ValidationError(MessageManager().get('empty_field').format(field_name=self.field_name()))
+            raise ValidationError(MessageManager.empty_field(self.field_name()))
 
         if (field_value is None or len(field_value) == 0) and not self.is_required():
             return True
 
         if len(field_value) < self.__min_len:
-            raise ValidationError(MessageManager().get('field_min_len').format(
-                field_name=self.field_name(), min_len=self.__min_len))
+            raise ValidationError(MessageManager.field_min_len(self.field_name(), self.__min_len))
 
         if len(field_value) > self.__max_len:
-            raise ValidationError(MessageManager().get('field_max_len').format(
-                field_name=self.field_name(), max_len=self.__max_len))
+            raise ValidationError(MessageManager.field_min_len(self.field_name(), self.__max_len))
 
         if self.__email and not re.match("[a-z0-9\-\.]+@[a-z0-9\-\.]+\.[a-z]+", field_value, re.IGNORECASE):
-            raise ValidationError(MessageManager().get('bad_email'))
+            raise ValidationError(MessageManager.bad_email())
 
         if self.__values is not None and field_value not in self.__values:
-            raise ValidationError(MessageManager().get('unknown_field_value').format(
-                field_name=self.field_name(),
-                field_value=field_value
-            ))
+            raise ValidationError(MessageManager.bad_token())
 
         return True
 
