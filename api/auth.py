@@ -42,7 +42,7 @@ def auth_email_verify():
 
     database_cursor.execute('INSERT INTO "Session"(user_id, token) VALUES (%s, %s)', (user_id, token,))
 
-    return ResponseManager.register_success(user_id, token)
+    return ResponseManager.registration_success(user_id, token)
 
 
 @auth.route('/register', methods=['POST'])

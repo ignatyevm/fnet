@@ -37,16 +37,16 @@ class ResponseManager:
         return {'status': 'authentication_error', 'error_message': MessageManager.wrong_credentials()}
 
     @staticmethod
-    def register_success(user_id, token):
-        return {'status': 'register_success', 'user_id': user_id, 'token': token}
+    def registration_success(user_id, token):
+        return {'status': 'registration_success', 'user_id': user_id, 'token': token}
 
     @staticmethod
-    def register_continue():
-        return {'status': 'register_continue'}
+    def registration_continue():
+        return {'status': 'registration_continue'}
 
     @staticmethod
-    def register_error():
-        return {'status': 'register_error', 'error_message': MessageManager.email_used()}
+    def registration_error():
+        return {'status': 'registration_error', 'error_message': MessageManager.email_used()}
 
     @staticmethod
     def verification_error():
